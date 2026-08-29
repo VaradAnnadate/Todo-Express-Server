@@ -1,6 +1,6 @@
 const express = require('express');
-const app = express()
-const port = 3000
+const app = express();
+const port = 3000;
 
 // parse requests with a Content-Type of application/json
 app.use(express.json());
@@ -11,7 +11,7 @@ let todos = [
         "title": "make todo server app",
         "completed": false
     }
-]
+];
 
 function findTodo(todoId) {
     const todoIdx = todos.findIndex(todo => todo.id === todoId);
@@ -22,8 +22,8 @@ function findTodo(todoId) {
 
 app.get('/todos', (req, res) => {
     // equivalent to writing head application/json
-    res.json(todos)
-})
+    res.json(todos);
+});
 
 app.get('/todos/:id', (req, res) => {
     // The id is accesible through req.params.id
@@ -39,7 +39,7 @@ app.get('/todos/:id', (req, res) => {
         return
     }
 
-    const [todoFound, idx] = findTodo(numericTodoId)
+    const [todoFound, idx] = findTodo(numericTodoId);
 
     // console.log(todoFound);
 
@@ -63,7 +63,7 @@ app.post('/todos', (req, res) => {
         typeof title !== 'string' ||
         title.trim() === ''
     ) {
-        res.status(400)
+        res.status(400);
         res.json({ "error": "Invalid todo format. Must include numeric 'id', non-empty string 'title'." });
         return
     }
@@ -71,31 +71,70 @@ app.post('/todos', (req, res) => {
     const [todoFound, idx] = findTodo(id);
 
     if (todoFound) {
-        res.status(409)
-        res.json({ "error": `Todo item with ID ${id} already exists.` })
+        res.status(409);
+        res.json({ "error": `Todo item with ID ${id} already exists.` });
     } else {
         todos.push({
             "id": id,
             "title": title.trim(),
             "completed": false
-        })
+        });
         res.status(201)
-        res.json({ "success": `Todo item with ID ${id} pushed successfully.` })
+        res.json({ "success": `Todo item with ID ${id} pushed successfully.` });
     }
 
-})
+});
 
 app.put('/todos/:id', (req, res) => {
     const todoId = req.params.id;
     const numericTodoId = Number(todoId);
 
+    if (isNaN(numericTodoId)) {
+        res.status(400);
+        res.json({ "error": "Invalid id format. id must be a number" });
+        return
+    }
+
+
     const [todoFound, idx] = findTodo(numericTodoId);
 
-    if(todoFound){
-        // Yet to make
+    if (todoFound) {
+        todos[idx]["completed"] = todos[idx]["completed"] == true ? false : true;
+        res.json({ "success": `Set completed of todo item with ID ${todoId} to ${todos[idx]["completed"]}.` });
+    } else {
+        res.status(404);
+        res.json({ "error": `Todo item with ID ${todoId} not found.` });
     }
-})
+});
+
+app.delete('/todos/:id', (req, res) => {
+    const todoId = req.params.id;
+    const numericTodoId = Number(todoId);
+
+    if (isNaN(numericTodoId)) {
+        res.status(400);
+        res.json({ "error": "Invalid id format. id must be a number" });
+        return
+    }
+
+    const [todoFound, idx] = findTodo(numericTodoId);
+
+    if (todoFound) {
+        todos.splice(idx, 1);
+        res.json({ "success": `Todo item with ID ${todoId} deleted successfully.` });
+    } else {
+        res.status(404);
+        res.json({ "error": `Todo item with ID ${todoId} not found.` });
+    }
+});
+
+app.use((req, res) => {
+    // This acts as the else block in the http createServer. If the route and method entered doesnt match any route and method from above this is fired.
+
+    res.status(404);
+    res.json({ "error": "Route not found" });
+});
 
 app.listen(port, () => {
-    console.log(`Todo app listening on port ${port}`)
-})
+    console.log(`Todo app listening on port ${port}. Read the README file to understand how the app works!`);
+});

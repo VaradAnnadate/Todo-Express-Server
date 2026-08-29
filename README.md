@@ -20,8 +20,20 @@ GET /todos/:id --> Particular todo {if id exists} ✅
 
 POST /todos --> Create a todo ✅
 
+```
+Post in format 
 
-PUT /todos:/id --> Update given todo
+{
+    "id": number,
+    "title": non-empty string,
+}
+```
 
 
-DELETE /todos/:id --> Delete given todo
+PUT /todos:/id --> Update given todo ✅
+
+```
+Put toggles the "completed" status for the given id
+```
+
+DELETE /todos/:id --> Delete given todo ✅
