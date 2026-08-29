@@ -1,27 +1,18 @@
 
 # Todo App in Express
 0% vibe coded!
+## Routes:
 
-### To Make:
-
-todo should contain:
-
-    -id
-    -title
-    -completed
-
-### Routes:
-
-GET /todos --> All todos ✅
+**GET** `/todos` --> All todos 
 
 
-GET /todos/:id --> Particular todo {if id exists} ✅
+**GET** `/todos/:id` --> Particular todo {if id exists} 
 
 
-POST /todos --> Create a todo ✅
+**POST** `/todos` --> Create a todo 
 
 ```
-Post in format 
+Post in the format 
 
 {
     "id": number,
@@ -30,10 +21,10 @@ Post in format
 ```
 
 
-PUT /todos:/id --> Update given todo ✅
+**PUT** `/todos:/id` --> Update given todo 
 
 ```
 "PUT" toggles the "completed" status of a todo for the given id
 ```
 
-DELETE /todos/:id --> Delete given todo ✅
+**DELETE** `/todos/:id` --> Delete given todo 
