@@ -33,7 +33,7 @@ Post in format
 PUT /todos:/id --> Update given todo ✅
 
 ```
-"PUT" toggles the "completed" status for the given id
+"PUT" toggles the "completed" status of the todo for the given id
 ```
 
 DELETE /todos/:id --> Delete given todo ✅
