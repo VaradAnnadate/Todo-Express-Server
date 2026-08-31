@@ -7,14 +7,6 @@ const port = 3000;
 // parse requests with a Content-Type of application/json
 app.use(express.json());
 
-// let todos = [
-//     {
-//         "id": 1,
-//         "title": "make todo server app",
-//         "completed": false
-//     }
-// ];
-
 let todos = [];
 
 let readAtleastOnce = false;
@@ -24,8 +16,6 @@ async function readTodos() {
     // console.log("in readtodos")
     const rawData = await fs.readFile(todoPath, "utf-8");
     todos = JSON.parse(rawData).todos;
-    
-
 }
 
 async function writeTodos() {
@@ -40,14 +30,10 @@ async function writeTodos() {
         return
     });
 
-    // console.log(dataToWrite);
-
 }
 
 async function findTodo(todoId, res) {
     try {
-        // const data = await readTodos();
-        // todos = data.todos;
         const todoIdx = todos.findIndex(todo => todo.id === todoId);
         const todoFound = todoIdx !== -1;
 
@@ -60,13 +46,9 @@ async function findTodo(todoId, res) {
 
 app.get('/todos', async (req, res) => {
     // equivalent to writing head application/json
-    // let todos = await readTodos();
-
-    // res.json(todos);
 
     try {
         await readTodos();
-
 
         readAtleastOnce = true;
         res.json(todos);
@@ -206,7 +188,6 @@ app.delete('/todos/:id', async (req, res) => {
 
 app.use((req, res) => {
     // This acts as the else block in the http createServer. If the route and method entered doesnt match any route and method from above this is fired.
-
     res.status(404);
     res.json({ "error": "Route not found" });
 });
