@@ -17,11 +17,15 @@ app.use(express.json());
 
 let todos = [];
 
+let readAtleastOnce = false;
+
 async function readTodos() {
     const todoPath = path.join(__dirname, "todos.json");
     // console.log("in readtodos")
     const rawData = await fs.readFile(todoPath, "utf-8");
-    return JSON.parse(rawData);
+    todos = JSON.parse(rawData).todos;
+    
+
 }
 
 async function writeTodos() {
@@ -32,7 +36,7 @@ async function writeTodos() {
     }
 
     await fs.writeFile(todoPath, JSON.stringify(dataToWrite), (err) => {
-        res.status(500).json({ error: "Failed to read todos." });
+        res.status(500).json({ error: "Failed to write todos." });
         return
     });
 
@@ -40,11 +44,10 @@ async function writeTodos() {
 
 }
 
-async function findTodo(todoId) {
+async function findTodo(todoId, res) {
     try {
-        const data = await readTodos();
-        todos = data.todos;
-
+        // const data = await readTodos();
+        // todos = data.todos;
         const todoIdx = todos.findIndex(todo => todo.id === todoId);
         const todoFound = todoIdx !== -1;
 
@@ -60,9 +63,13 @@ app.get('/todos', async (req, res) => {
     // let todos = await readTodos();
 
     // res.json(todos);
+
     try {
-        const data = await readTodos();
-        res.json(data.todos);
+        await readTodos();
+
+
+        readAtleastOnce = true;
+        res.json(todos);
     } catch (err) {
         res.status(500).json({ error: "Failed to read todos." });
     }
@@ -77,20 +84,23 @@ app.get('/todos/:id', async (req, res) => {
 
     // use res.status to write status code
     if (isNaN(numericTodoId)) {
-        res.status(400);
-        res.json({ "error": "Invalid ID format. ID must be a number." });
+        res.status(400).json({ "error": "Invalid ID format. ID must be a number." });
         return
     }
 
-    const [todoFound, idx] = await findTodo(numericTodoId);
+    if (!readAtleastOnce) {
+        await readTodos();
+        readAtleastOnce = true;
+    }
+
+    const [todoFound, idx] = await findTodo(numericTodoId, res);
 
     // console.log(todoFound);
 
     if (todoFound) {
         res.json(todos[idx]);
     } else {
-        res.status(404);
-        res.json({ "error": `Todo item with ID ${todoId} not found.` });
+        res.status(404).json({ "error": `Todo item with ID ${todoId} not found.` });
     }
 
 });
@@ -99,7 +109,10 @@ app.post('/todos', async (req, res) => {
     // req data is accessible by req.body 
     // res.send(req.body);
 
-    await readTodos();
+    if (!readAtleastOnce) {
+        await readTodos();
+        readAtleastOnce = true;
+    }
 
     const { id, title } = req.body;
 
@@ -113,7 +126,7 @@ app.post('/todos', async (req, res) => {
         return
     }
 
-    const [todoFound, idx] = await findTodo(id);
+    const [todoFound, idx] = await findTodo(id, res);
 
     if (todoFound) {
         res.status(409);
@@ -133,7 +146,7 @@ app.post('/todos', async (req, res) => {
 
 });
 
-app.put('/todos/:id', (req, res) => {
+app.put('/todos/:id', async (req, res) => {
     const todoId = req.params.id;
     const numericTodoId = Number(todoId);
 
@@ -143,11 +156,18 @@ app.put('/todos/:id', (req, res) => {
         return
     }
 
+    if (!readAtleastOnce) {
+        await readTodos();
+        readAtleastOnce = true;
+    }
 
-    const [todoFound, idx] = findTodo(numericTodoId);
+    const [todoFound, idx] = await findTodo(numericTodoId, res);
 
     if (todoFound) {
         todos[idx]["completed"] = todos[idx]["completed"] == true ? false : true;
+
+        await writeTodos();
+
         res.json({ "success": `Set completed of todo item with ID ${todoId} to ${todos[idx]["completed"]}.` });
     } else {
         res.status(404);
@@ -155,7 +175,7 @@ app.put('/todos/:id', (req, res) => {
     }
 });
 
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id', async (req, res) => {
     const todoId = req.params.id;
     const numericTodoId = Number(todoId);
 
@@ -165,10 +185,18 @@ app.delete('/todos/:id', (req, res) => {
         return
     }
 
-    const [todoFound, idx] = findTodo(numericTodoId);
+    if (!readAtleastOnce) {
+        await readTodos();
+        readAtleastOnce = true;
+    }
+
+    const [todoFound, idx] = await findTodo(numericTodoId, res);
 
     if (todoFound) {
         todos.splice(idx, 1);
+
+        await writeTodos();
+
         res.json({ "success": `Todo item with ID ${todoId} deleted successfully.` });
     } else {
         res.status(404);
