@@ -2,8 +2,6 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const fs = require('fs/promises');
-const { compose } = require('stream');
-const { json } = require('stream/consumers');
 const port = 3000;
 
 // parse requests with a Content-Type of application/json
@@ -17,6 +15,8 @@ app.use(express.json());
 //     }
 // ];
 
+let todos = [];
+
 async function readTodos() {
     const todoPath = path.join(__dirname, "todos.json");
     // console.log("in readtodos")
@@ -24,11 +24,35 @@ async function readTodos() {
     return JSON.parse(rawData);
 }
 
-function findTodo(todoId) {
-    const todoIdx = todos.findIndex(todo => todo.id === todoId);
-    const todoFound = todoIdx !== -1;
+async function writeTodos() {
+    const todoPath = path.join(__dirname, "todos.json");
 
-    return [todoFound, todoIdx];
+    const dataToWrite = {
+        "todos": todos
+    }
+
+    await fs.writeFile(todoPath, JSON.stringify(dataToWrite), (err) => {
+        res.status(500).json({ error: "Failed to read todos." });
+        return
+    });
+
+    // console.log(dataToWrite);
+
+}
+
+async function findTodo(todoId) {
+    try {
+        const data = await readTodos();
+        todos = data.todos;
+
+        const todoIdx = todos.findIndex(todo => todo.id === todoId);
+        const todoFound = todoIdx !== -1;
+
+        return [todoFound, todoIdx];
+    } catch (err) {
+        res.status(500).json({ error: "Failed to read todos." });
+        return [false, -1];
+    }
 }
 
 app.get('/todos', async (req, res) => {
@@ -38,13 +62,13 @@ app.get('/todos', async (req, res) => {
     // res.json(todos);
     try {
         const data = await readTodos();
-        res.json(data.todos); // Or res.json(data)
+        res.json(data.todos);
     } catch (err) {
         res.status(500).json({ error: "Failed to read todos." });
     }
 });
 
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id', async (req, res) => {
     // The id is accesible through req.params.id
     const todoId = req.params.id;
     const numericTodoId = Number(todoId);
@@ -58,7 +82,7 @@ app.get('/todos/:id', (req, res) => {
         return
     }
 
-    const [todoFound, idx] = findTodo(numericTodoId);
+    const [todoFound, idx] = await findTodo(numericTodoId);
 
     // console.log(todoFound);
 
@@ -71,9 +95,11 @@ app.get('/todos/:id', (req, res) => {
 
 });
 
-app.post('/todos', (req, res) => {
+app.post('/todos', async (req, res) => {
     // req data is accessible by req.body 
     // res.send(req.body);
+
+    await readTodos();
 
     const { id, title } = req.body;
 
@@ -87,7 +113,7 @@ app.post('/todos', (req, res) => {
         return
     }
 
-    const [todoFound, idx] = findTodo(id);
+    const [todoFound, idx] = await findTodo(id);
 
     if (todoFound) {
         res.status(409);
@@ -98,6 +124,9 @@ app.post('/todos', (req, res) => {
             "title": title.trim(),
             "completed": false
         });
+
+        await writeTodos();
+
         res.status(201)
         res.json({ "success": `Todo item with ID ${id} pushed successfully.` });
     }
