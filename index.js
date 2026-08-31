@@ -1,17 +1,28 @@
 const express = require('express');
 const app = express();
+const path = require('path');
+const fs = require('fs/promises');
+const { compose } = require('stream');
+const { json } = require('stream/consumers');
 const port = 3000;
 
 // parse requests with a Content-Type of application/json
 app.use(express.json());
 
-let todos = [
-    {
-        "id": 1,
-        "title": "make todo server app",
-        "completed": false
-    }
-];
+// let todos = [
+//     {
+//         "id": 1,
+//         "title": "make todo server app",
+//         "completed": false
+//     }
+// ];
+
+async function readTodos() {
+    const todoPath = path.join(__dirname, "todos.json");
+    // console.log("in readtodos")
+    const rawData = await fs.readFile(todoPath, "utf-8");
+    return JSON.parse(rawData);
+}
 
 function findTodo(todoId) {
     const todoIdx = todos.findIndex(todo => todo.id === todoId);
@@ -20,9 +31,17 @@ function findTodo(todoId) {
     return [todoFound, todoIdx];
 }
 
-app.get('/todos', (req, res) => {
+app.get('/todos', async (req, res) => {
     // equivalent to writing head application/json
-    res.json(todos);
+    // let todos = await readTodos();
+
+    // res.json(todos);
+    try {
+        const data = await readTodos();
+        res.json(data.todos); // Or res.json(data)
+    } catch (err) {
+        res.status(500).json({ error: "Failed to read todos." });
+    }
 });
 
 app.get('/todos/:id', (req, res) => {
